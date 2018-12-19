@@ -1,0 +1,310 @@
+swagger: '2.0'
+info:
+  description: PowerMaster接口api说明
+  version: '1.0'
+  title: 功耗api说明文档
+  # termsOfService:  这里写官网 暂时不知道所以注了
+#指定调用接口的协议  
+schemes:
+  - http 
+  - https
+  
+#host指定测试时的主机名，如果没有指定就是当前主机,可以指定端口  
+host: '192.0.0.0:8080'  
+#定义的api的前缀，必须已/开头,测试用例的主机则为:host＋bashPath
+basePath: /api 
+
+#这两个是对所有接口的全局设置，在细化的接口中是还可以对应这两个属性来覆盖全局属性
+consumes:
+  - application/json
+produces: 
+  - application/json
+  
+  #必要字段!定义可有可操作的API
+paths: 
+  /PowerMaster/GetPower:
+  #必要字段!定义HTTP操作方法，必须是http协议定义的方法
+    get: 
+    #标签，方便快速过滤出User相关的接口
+      tags:
+        - PowerMasterApi
+         #接口概要
+      summary: 获取功耗api
+      #接口描述
+      description: 获取需要控制的功耗
+      operationId: GetPower#后端
+      #传递方法，formData表示表单传输，还有query表示url拼接传输，path表示作为url的一部分
+          #body表示http头承载参数(body只能有一个,有body不能在有其他的)
+      parameters:
+        - name: label
+          in: body
+          description: 设备标签
+          schema:
+            $ref: '#/definitions/GetPowerRequest'
+       #返回值描述，必要自动      
+      responses:
+      #返回的http状态码
+        '200':
+          description: Success
+          #描述返回值
+          schema:
+            $ref: '#/definitions/GetPowerRequest'
+         #执行出错的处理    
+        '400':
+          description: 操作异常,执行失败.返回信息描述错误详情
+          schema:
+          #返回值格式，可选的有array,integer,string,boolean
+              type: object
+              properties:
+                err_code:
+                  type: integer
+                  format: int32
+                err_msg:          # <-- image embedded into JSON
+                  type: string
+                infos:
+                  type: object
+                  $ref: '#/definitions/PowerInfo'
+                 
+        
+  /PowerMaster/SetPower: #可+/{label}表示label为请求参数，例如/label/1,/label/2都是对该API的请求，此时label即为１和2
+    post:
+      tags:
+        - PowerMasterApi
+      summary: 设置功耗
+      description: 配置需要的功耗
+      #请求参数
+      parameters:
+          #传递方法，formData表示表单传输，还有query表示url拼接传输，path表示作为url的一部分
+          #body表示http头承载参数
+          
+          #上面接口中如果定义了{label}，则参数列表中必须包含参数label,并且请求类型为path
+        - in: body
+          #参数key
+          name: label
+          description: 设备标签
+          #参数是否必要，默认false
+          #required: true
+          schema:
+            $ref: '#/definitions/SetPowerRequest'
+        
+      responses:
+        '200':
+          description: Success
+        
+        '403':
+          description: 操作异常,执行失败.返回信息描述错误详情
+          schema:
+              type: object
+              properties:
+                err_code:
+                  type: integer
+                  format: int32
+                err_msg:          # <-- image embedded into JSON
+                  type: string
+                    
+  /PowerMaster/ListDevices:
+    get:
+      tags:
+        - PowerMasterApi
+      summary: 设备列表
+      description: 列出所有设备
+      operationId: ListDevices
+      parameters:
+        - in: path
+          name: label
+          description: 设备标签
+          required: true
+          type: string
+        
+      responses:
+        '200':
+          description: Success
+        
+        '403':
+          description: 操作异常,执行失败.返回信息描述错误详情
+          schema:
+              type: object
+              properties:
+                err_code:
+                  type: integer
+                  format: int32
+                err_msg:          # <-- image embedded into JSON
+                  type: string
+                devices:
+                  type: object
+                  $ref: '#/definitions/Device'
+  
+  /PowerMaster/AddLabel:
+    post: 
+    
+      tags:
+        - PowerMasterApi
+      summary: 添加标签
+      description: 为设备添加新标签
+      parameters:
+
+        - in: query
+          name: label
+          description: 目标设备标签
+          type: string
+        
+        - in: query
+          name: target
+          description: 新标签
+          type: string
+          
+      responses:
+        '200':
+          description: Success
+        
+        '403':
+          description: 操作异常,执行失败.返回信息描述错误详情
+          schema:
+              type: object
+              properties:
+                err_code:
+                  type: integer
+                  format: int32
+                err_msg:          # <-- image embedded into JSON
+                  type: string   
+  
+  #http定义的delete方法,删除一个资源
+    delete:
+      summary: 删除标签
+      description: 删除某个设备的标签，被删除的设备将无法通过标签查询
+      parameters:
+      
+        - in: query
+          name: label
+          type: string
+          description: 用户的唯一标示符
+          
+      tags:
+        - PowerMasterApi
+      responses:
+        '200':
+          description: 通过返回值来标示执行结果　返回true表示执行成功
+          schema:
+             #值类型
+              type: object
+              #定义属性
+              properties:
+              #属性名
+                status:
+                  #类型
+                  type: boolean
+                  #描述
+                  description: 是否成功
+        '405':
+          description: 操作异常,执行失败.返回信息描述错误详情
+          schema:
+              #值类型
+              type: object
+              #定义属性
+              properties:
+              #错误码
+                err_code:
+                  type: integer
+                  format: int32
+              #属性名
+                err_msg:
+                  #类型
+                  type: string
+                  #描述错误信息
+
+
+definitions:
+  GetPowerRequest:
+    type: object
+    properties:
+      label:
+        type: string
+        description: 标签
+      live:
+        type: boolean
+        description: 存活状态
+      start_time:
+        type: integer
+        format: int32
+        description: 起始时间间隔
+      end_time:
+        type: integer
+        format: int32
+        description: 结束时间间隔
+      max_count:
+        type: integer
+        format: int32
+        description: 最大值
+    description: 获取功率参数
+    
+        
+  PowerInfo:
+    type: object
+    properties:
+      device_id:
+        type: string
+        description: 错误设备编号
+      power:
+        type: integer
+        format: int32
+        description: 出错当前功率
+      freq:
+        type: integer
+        format: int64
+        description: 出错当前频率 
+      timestamp:
+        type: integer
+        format: int32
+        description: 出错当前时间点
+  
+  SetPowerRequest:
+    type: object
+    properties:
+       label:
+        type: string
+        description: 设备标签
+       strategy:
+        type: string
+        description: 功率策略
+        enum:
+        - NONE
+        - CAPPING_POWER
+        - CAPPING_FREQ
+        - THEADING
+        - HIBERNATING
+       strength:
+        type: integer
+        format: int32
+        description: 强度
+       min_freq:
+        type: integer
+        format: int32
+        description: 最小频率
+        
+  Device:
+    type: object
+    properties:
+      id:
+        type: string
+        description: 设备编号
+      type:
+        type: string
+        description: 类型
+      address:
+        type: string
+        description: 地址 
+      oob:
+        type: string
+        description: 未知数据
+      max_power:
+        type: integer
+        format: int32
+        description: 最大功耗   
+      max_freq:
+        type: integer
+        format: int64
+        description: 最大频率 
+      labels:
+        type: string
+        description: 所属的标签，可重复
+     
